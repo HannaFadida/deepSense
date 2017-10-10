@@ -7,48 +7,57 @@ import time
 import math
 import os
 import sys
-
+import config
 layers = tf.contrib.layers 
 
-ACC_SEPCTURAL_SAMPLES = 100
-GYRO_SEPCTURAL_SAMPLES = 100
-GPS_SEPCTURAL_SAMPLES = 2
-MAG_SEPCTURAL_SAMPLES = 30
-
-ACC_DIM = 3
-GYRO_DIM = 3
-GPS_DIM = 7
-MAG_DIM = 3
-
-ACC_FEATURE_DIM = ACC_SEPCTURAL_SAMPLES*ACC_DIM*2
-GYRO_FEATURE_DIM =  GYRO_SEPCTURAL_SAMPLES*GYRO_DIM*2
-GPS_FEATURE_DIM =  GPS_SEPCTURAL_SAMPLES*GPS_DIM*2
-MAG_FEATURE_DIM = MAG_SEPCTURAL_SAMPLES*MAG_DIM*2
-
-FEATURE_DIM = ACC_FEATURE_DIM + GYRO_FEATURE_DIM + GPS_FEATURE_DIM + MAG_FEATURE_DIM
-
-CONV_LEN = 3
-CONV_LEN_INTE = 3#4
-CONV_LEN_LAST = 3#5
-CONV_NUM = 64
-CONV_MERGE_LEN = 8
-CONV_MERGE_LEN2 = 6
-CONV_MERGE_LEN3 = 4
-CONV_NUM2 = 64
-INTER_DIM = 120#hanna - change in case we are taking more tham 2 sensors!
-OUT_DIM = 1#len(idDict)
-WIDE = 1
-CONV_KEEP_PROB = 0.8
-
-BATCH_SIZE = 64
-TOTAL_ITER_NUM = 1000000000
+# ACC_SEPCTURAL_SAMPLES = 100
+# GYRO_SEPCTURAL_SAMPLES = 100
+# GPS_SEPCTURAL_SAMPLES = 2
+# MAG_SEPCTURAL_SAMPLES = 30
+#
+# ACC_DIM = 3
+# GYRO_DIM = 3
+# GPS_DIM = 7
+# MAG_DIM = 3
+#
+# ACC_FEATURE_DIM = ACC_SEPCTURAL_SAMPLES*ACC_DIM*2
+# GYRO_FEATURE_DIM =  GYRO_SEPCTURAL_SAMPLES*GYRO_DIM*2
+# GPS_FEATURE_DIM =  GPS_SEPCTURAL_SAMPLES*GPS_DIM*2
+# MAG_FEATURE_DIM = MAG_SEPCTURAL_SAMPLES*MAG_DIM*2
+#
+# FEATURE_DIM = ACC_FEATURE_DIM + GYRO_FEATURE_DIM + GPS_FEATURE_DIM + MAG_FEATURE_DIM
+#
+#
+# #1 sec filter
+# ACC_CONV_LEN = 50
+# GYRO_CONV_LEN = 50
+# GPS_CONV_LEN = 1
+# MAG_CONV_LEN = 15
+#
+#
+# #CONV_LEN = 3
+# CONV_LEN_INTE = 3#4
+# CONV_LEN_LAST = 3#5
+# CONV_NUM = 64
+# CONV_MERGE_LEN = 8
+# CONV_MERGE_LEN2 = 6
+# CONV_MERGE_LEN3 = 4
+# CONV_NUM2 = 64
+# INTER_DIM = 120#hanna - change in case we are taking more tham 2 sensors!
+# OUT_DIM = 1#len(idDict)
+# WIDE = 1
+# CONV_KEEP_PROB = 0.8
+#
+# BATCH_SIZE = 64
+# #TOTAL_ITER_NUM = 1000000000
+# TOTAL_ITER_NUM = 100
 
 select = 'a'
 
 metaDict = {'a':[119080, 1193], 'b':[116870, 1413], 'c':[116020, 1477]}
 TRAIN_SIZE = metaDict[select][0]
 EVAL_DATA_SIZE = metaDict[select][1]
-EVAL_ITER_NUM = int(math.ceil(EVAL_DATA_SIZE / BATCH_SIZE))
+EVAL_ITER_NUM = int(math.ceil(EVAL_DATA_SIZE / config.BATCH_SIZE))
 
 ###### Import training data
 def read_audio_csv(filename_queue):
@@ -94,6 +103,35 @@ def batch_norm_layer(inputs, phase_train, scope=None):
                 return layers.batch_norm(inputs, is_training=False, scale=True,
                         updates_collections=None, scope=scope, reuse = True)
 
+# def sensor_conv_seq(inputs, train, sensor):
+#         conv1 = layers.convolution2d(inputs, CONV_NUM, kernel_size=[1, 2 * 3 * CONV_LEN],
+#                                          stride=[1, 2 * 3], padding='VALID', activation_fn=None, data_format='NHWC',
+#                                          scope=sensor + '_conv1')
+#         conv1 = batch_norm_layer(conv1, train, scope=sensor + '_BN1')
+#         conv1 = tf.nn.relu(conv1)
+#         conv1_shape = conv1.get_shape().as_list()
+#         conv1 = layers.dropout(conv1, CONV_KEEP_PROB, is_training=train,
+#                                    noise_shape=[conv1_shape[0], 1, 1, conv1_shape[3]], scope=sensor + '_dropout1')
+#
+#         conv2 = layers.convolution2d(conv1, CONV_NUM, kernel_size=[1, CONV_LEN_INTE],
+#                                          stride=[1, 1], padding='VALID', activation_fn=None, data_format='NHWC',
+#                                          scope=sensor + '_conv2')
+#         conv2 = batch_norm_layer(conv2, train, scope=sensor + '_BN2')
+#         conv2 = tf.nn.relu(conv2)
+#         conv2_shape = conv2.get_shape().as_list()
+#         conv2 = layers.dropout(conv2, config.CONV_KEEP_PROB, is_training=train,
+#                                    noise_shape=[conv2_shape[0], 1, 1, conv2_shape[3]], scope=sensor + '_dropout2')
+#
+#         conv3 = layers.convolution2d(conv2, CONV_NUM, kernel_size=[1, CONV_LEN_LAST],
+#                                          stride=[1, 1], padding='VALID', activation_fn=None, data_format='NHWC',
+#                                          scope=sensor + '_conv3')
+#         conv3 = batch_norm_layer(conv3, train, scope=sensor + '_BN3')
+#         conv3 = tf.nn.relu(conv3)
+#         conv3_shape = conv3.get_shape().as_list()
+#         conv_out = tf.reshape(conv3,
+#                                   [conv3_shape[0], conv3_shape[1], 1, conv3_shape[2], conv3_shape[3]])
+#         return conv_out
+
 def deepSense(inputs, train, reuse=False, name='deepSense'):
         with tf.variable_scope(name, reuse=reuse) as scope:
                 used = tf.sign(tf.reduce_max(tf.abs(inputs), reduction_indices=2)) #(BATCH_SIZE, WIDE)
@@ -101,31 +139,31 @@ def deepSense(inputs, train, reuse=False, name='deepSense'):
                 length = tf.cast(length, tf.int64)
 
                 mask = tf.sign(tf.reduce_max(tf.abs(inputs), reduction_indices=2, keep_dims=True))
-                mask = tf.tile(mask, [1,1,INTER_DIM]) # (BATCH_SIZE, WIDE, INTER_DIM)
+                mask = tf.tile(mask, [1,1,config.INTER_DIM]) # (BATCH_SIZE, WIDE, INTER_DIM)
                 avgNum = tf.reduce_sum(mask, reduction_indices=1) #(BATCH_SIZE, INTER_DIM)
 
                 # inputs shape (BATCH_SIZE, WIDE, FEATURE_DIM)
                 sensor_inputs = tf.expand_dims(inputs, axis=3)
                 # sensor_inputs shape (BATCH_SIZE, WIDE, FEATURE_DIM, CHANNEL=1)
-                acc_inputs, gyro_inputs, gps_inputs, mag_inputs = tf.split(sensor_inputs, num_or_size_splits=[ACC_FEATURE_DIM ,GYRO_FEATURE_DIM ,GPS_FEATURE_DIM ,MAG_FEATURE_DIM], axis=2)
+                acc_inputs, gyro_inputs, gps_inputs, mag_inputs = tf.split(sensor_inputs, num_or_size_splits=[config.ACC_FEATURE_DIM ,config.GYRO_FEATURE_DIM ,config.GPS_FEATURE_DIM ,config.MAG_FEATURE_DIM], axis=2)
 
-                acc_conv1 = layers.convolution2d(acc_inputs, CONV_NUM, kernel_size=[1, 2*3*CONV_LEN],
+                acc_conv1 = layers.convolution2d(acc_inputs, config.CONV_NUM, kernel_size=[1, 2*config.ACC_DIM*config.ACC_CONV_LEN],
                                                 stride=[1, 2*3], padding='VALID', activation_fn=None, data_format='NHWC', scope='acc_conv1')
                 acc_conv1 = batch_norm_layer(acc_conv1, train, scope='acc_BN1')
                 acc_conv1 = tf.nn.relu(acc_conv1)
                 acc_conv1_shape = acc_conv1.get_shape().as_list()
-                acc_conv1 = layers.dropout(acc_conv1, CONV_KEEP_PROB, is_training=train, 
+                acc_conv1 = layers.dropout(acc_conv1, config.CONV_KEEP_PROB, is_training=train,
                         noise_shape=[acc_conv1_shape[0], 1, 1, acc_conv1_shape[3]], scope='acc_dropout1')
 
-                acc_conv2 = layers.convolution2d(acc_conv1, CONV_NUM, kernel_size=[1, CONV_LEN_INTE],
+                acc_conv2 = layers.convolution2d(acc_conv1, config.CONV_NUM, kernel_size=[1, config.CONV_LEN_INTE],
                                                 stride=[1, 1], padding='VALID', activation_fn=None, data_format='NHWC', scope='acc_conv2')
                 acc_conv2 = batch_norm_layer(acc_conv2, train, scope='acc_BN2')
                 acc_conv2 = tf.nn.relu(acc_conv2)
                 acc_conv2_shape = acc_conv2.get_shape().as_list()
-                acc_conv2 = layers.dropout(acc_conv2, CONV_KEEP_PROB, is_training=train,
+                acc_conv2 = layers.dropout(acc_conv2, config.CONV_KEEP_PROB, is_training=train,
                         noise_shape=[acc_conv2_shape[0], 1, 1, acc_conv2_shape[3]], scope='acc_dropout2')
 
-                acc_conv3 = layers.convolution2d(acc_conv2, CONV_NUM, kernel_size=[1, CONV_LEN_LAST],
+                acc_conv3 = layers.convolution2d(acc_conv2, config.CONV_NUM, kernel_size=[1, config.CONV_LEN_LAST],
                                                 stride=[1, 1], padding='VALID', activation_fn=None, data_format='NHWC', scope='acc_conv3')
                 acc_conv3 = batch_norm_layer(acc_conv3, train, scope='acc_BN3')
                 acc_conv3 = tf.nn.relu(acc_conv3)
@@ -133,51 +171,103 @@ def deepSense(inputs, train, reuse=False, name='deepSense'):
                 acc_conv_out = tf.reshape(acc_conv3, [acc_conv3_shape[0], acc_conv3_shape[1], 1, acc_conv3_shape[2],acc_conv3_shape[3]])
 
 
-                gyro_conv1 = layers.convolution2d(gyro_inputs, CONV_NUM, kernel_size=[1, 2*3*CONV_LEN],
+                gyro_conv1 = layers.convolution2d(gyro_inputs, config.CONV_NUM, kernel_size=[1, 2*config.GYRO_DIM*config.GYRO_CONV_LEN],
                                                 stride=[1, 2*3], padding='VALID', activation_fn=None, data_format='NHWC', scope='gyro_conv1')
                 gyro_conv1 = batch_norm_layer(gyro_conv1, train, scope='gyro_BN1')
                 gyro_conv1 = tf.nn.relu(gyro_conv1)
                 gyro_conv1_shape = gyro_conv1.get_shape().as_list()
-                gyro_conv1 = layers.dropout(gyro_conv1, CONV_KEEP_PROB, is_training=train,
+                gyro_conv1 = layers.dropout(gyro_conv1, config.CONV_KEEP_PROB, is_training=train,
                         noise_shape=[gyro_conv1_shape[0], 1, 1, gyro_conv1_shape[3]], scope='gyro_dropout1')
 
-                gyro_conv2 = layers.convolution2d(gyro_conv1, CONV_NUM, kernel_size=[1, CONV_LEN_INTE],
+                gyro_conv2 = layers.convolution2d(gyro_conv1, config.CONV_NUM, kernel_size=[1, config.CONV_LEN_INTE],
                                                 stride=[1, 1], padding='VALID', activation_fn=None, data_format='NHWC', scope='gyro_conv2')
                 gyro_conv2 = batch_norm_layer(gyro_conv2, train, scope='gyro_BN2')
                 gyro_conv2 = tf.nn.relu(gyro_conv2)
                 gyro_conv2_shape = gyro_conv2.get_shape().as_list()
-                gyro_conv2 = layers.dropout(gyro_conv2, CONV_KEEP_PROB, is_training=train,
+                gyro_conv2 = layers.dropout(gyro_conv2, config.CONV_KEEP_PROB, is_training=train,
                         noise_shape=[gyro_conv2_shape[0], 1, 1, gyro_conv2_shape[3]], scope='gyro_dropout2')
 
-                gyro_conv3 = layers.convolution2d(gyro_conv2, CONV_NUM, activation_fn=None, kernel_size=[1, CONV_LEN_LAST],
+                gyro_conv3 = layers.convolution2d(gyro_conv2, config.CONV_NUM, activation_fn=None, kernel_size=[1, config.CONV_LEN_LAST],
                                                 stride=[1, 1], padding='VALID', data_format='NHWC', scope='gyro_conv3')
                 gyro_conv3 = batch_norm_layer(gyro_conv3, train, scope='gyro_BN3')
                 gyro_conv3 = tf.nn.relu(gyro_conv3)
                 gyro_conv3_shape = gyro_conv3.get_shape().as_list()
-                gyro_conv_out = tf.reshape(gyro_conv3, [gyro_conv3_shape[0], gyro_conv3_shape[1], 1, gyro_conv3_shape[2], gyro_conv3_shape[3]])        
+                gyro_conv_out = tf.reshape(gyro_conv3, [gyro_conv3_shape[0], gyro_conv3_shape[1], 1, gyro_conv3_shape[2], gyro_conv3_shape[3]])
 
-                sensor_conv_in = tf.concat([acc_conv_out, gyro_conv_out], 2)
+                gps_conv1 = layers.convolution2d(gps_inputs, config.CONV_NUM, kernel_size=[1, 2*config.GPS_DIM*config.PS_CONV_LEN],
+                                                stride=[1, 2*3], padding='VALID', activation_fn=None, data_format='NHWC', scope='gps_conv1')
+                gps_conv1 = batch_norm_layer(gps_conv1, train, scope='gps_BN1')
+                gps_conv1 = tf.nn.relu(gps_conv1)
+                gps_conv1_shape = gps_conv1.get_shape().as_list()
+                gps_conv1 = layers.dropout(gps_conv1, config.CONV_KEEP_PROB, is_training=train,
+                        noise_shape=[gps_conv1_shape[0], 1, 1, gps_conv1_shape[3]], scope='gps_dropout1')
+
+                gps_conv2 = layers.convolution2d(gps_conv1, config.CONV_NUM, kernel_size=[1, config.CONV_LEN_INTE],
+                                                stride=[1, 1], padding='VALID', activation_fn=None, data_format='NHWC', scope='gps_conv2')
+                gps_conv2 = batch_norm_layer(gps_conv2, train, scope='gps_BN2')
+                gps_conv2 = tf.nn.relu(gps_conv2)
+                gps_conv2_shape = gps_conv2.get_shape().as_list()
+                gps_conv2 = layers.dropout(gps_conv2, config.CONV_KEEP_PROB, is_training=train,
+                        noise_shape=[gps_conv2_shape[0], 1, 1, gps_conv2_shape[3]], scope='gps_dropout2')
+
+                gps_conv3 = layers.convolution2d(gps_conv2, config.CONV_NUM, activation_fn=None, kernel_size=[1, config.CONV_LEN_LAST],
+                                                stride=[1, 1], padding='VALID', data_format='NHWC', scope='gps_conv3')
+                gps_conv3 = batch_norm_layer(gps_conv3, train, scope='gps_BN3')
+                gps_conv3 = tf.nn.relu(gps_conv3)
+                gps_conv3_shape = gps_conv3.get_shape().as_list()
+                gps_conv_out = tf.reshape(gps_conv3, [gps_conv3_shape[0], gps_conv3_shape[1], 1, gps_conv3_shape[2], gps_conv3_shape[3]])
+
+                mag_conv1 = layers.convolution2d(mag_inputs, config.CONV_NUM, kernel_size=[1, 2*config.MAG_DIM*config.MAG_CONV_LEN],
+                                                stride=[1, 2*3], padding='VALID', activation_fn=None, data_format='NHWC', scope='mag_conv1')
+                mag_conv1 = batch_norm_layer(mag_conv1, train, scope='mag_BN1')
+                mag_conv1 = tf.nn.relu(mag_conv1)
+                mag_conv1_shape = mag_conv1.get_shape().as_list()
+                mag_conv1 = layers.dropout(mag_conv1, config.CONV_KEEP_PROB, is_training=train,
+                        noise_shape=[mag_conv1_shape[0], 1, 1, mag_conv1_shape[3]], scope='mag_dropout1')
+
+                mag_conv2 = layers.convolution2d(mag_conv1, CONV_NUM, kernel_size=[1, CONV_LEN_INTE],
+                                                stride=[1, 1], padding='VALID', activation_fn=None, data_format='NHWC', scope='mag_conv2')
+                mag_conv2 = batch_norm_layer(mag_conv2, train, scope='mag_BN2')
+                mag_conv2 = tf.nn.relu(mag_conv2)
+                mag_conv2_shape = mag_conv2.get_shape().as_list()
+                mag_conv2 = layers.dropout(mag_conv2, config.CONV_KEEP_PROB, is_training=train,
+                        noise_shape=[mag_conv2_shape[0], 1, 1, mag_conv2_shape[3]], scope='mag_dropout2')
+
+                mag_conv3 = layers.convolution2d(mag_conv2, CONV_NUM, activation_fn=None, kernel_size=[1, CONV_LEN_LAST],
+                                                stride=[1, 1], padding='VALID', data_format='NHWC', scope='mag_conv3')
+                mag_conv3 = batch_norm_layer(mag_conv3, train, scope='mags_BN3')
+                mag_conv3 = tf.nn.relu(mag_conv3)
+                mag_conv3_shape = mag_conv3.get_shape().as_list()
+                mag_conv_out = tf.reshape(mag_conv3, [mag_conv3_shape[0], mag_conv3_shape[1], 1, mag_conv3_shape[2], mag_conv3_shape[3]])
+
+
+                # acc_conv_out = sensor_conv_seq(acc_inputs, train, 'acc')
+                # gyro_conv_out = sensor_conv_seq(gyro_inputs, train, 'gyro')
+                # gps_conv_out = sensor_conv_seq(gps_inputs, train, 'gps')
+                # mag_conv_out = sensor_conv_seq(mag_inputs, train, 'mag')
+
+                sensor_conv_in = tf.concat([acc_conv_out, gyro_conv_out, gps_conv_out, mag_conv_out], 2)
                 senor_conv_shape = sensor_conv_in.get_shape().as_list()        
-                sensor_conv_in = layers.dropout(sensor_conv_in, CONV_KEEP_PROB, is_training=train,
+                sensor_conv_in = layers.dropout(sensor_conv_in, config.CONV_KEEP_PROB, is_training=train,
                         noise_shape=[senor_conv_shape[0], 1, 1, 1, senor_conv_shape[4]], scope='sensor_dropout_in')
 
-                sensor_conv1 = layers.convolution2d(sensor_conv_in, CONV_NUM2, kernel_size=[1, 2, CONV_MERGE_LEN],
+                sensor_conv1 = layers.convolution2d(sensor_conv_in, config.CONV_NUM2, kernel_size=[1, 2, CONV_MERGE_LEN],
                                                 stride=[1, 1, 1], padding='SAME', activation_fn=None, data_format='NDHWC', scope='sensor_conv1')
                 sensor_conv1 = batch_norm_layer(sensor_conv1, train, scope='sensor_BN1')
                 sensor_conv1 = tf.nn.relu(sensor_conv1)
                 sensor_conv1_shape = sensor_conv1.get_shape().as_list()
-                sensor_conv1 = layers.dropout(sensor_conv1, CONV_KEEP_PROB, is_training=train,
+                sensor_conv1 = layers.dropout(sensor_conv1, config.CONV_KEEP_PROB, is_training=train,
                         noise_shape=[sensor_conv1_shape[0], 1, 1, 1, sensor_conv1_shape[4]], scope='sensor_dropout1')
 
-                sensor_conv2 = layers.convolution2d(sensor_conv1, CONV_NUM2, kernel_size=[1, 2, CONV_MERGE_LEN2],
+                sensor_conv2 = layers.convolution2d(sensor_conv1, config.CONV_NUM2, kernel_size=[1, 2, CONV_MERGE_LEN2],
                                                 stride=[1, 1, 1], padding='SAME', activation_fn=None, data_format='NDHWC', scope='sensor_conv2')
                 sensor_conv2 = batch_norm_layer(sensor_conv2, train, scope='sensor_BN2')
                 sensor_conv2 = tf.nn.relu(sensor_conv2)
                 sensor_conv2_shape = sensor_conv2.get_shape().as_list()
-                sensor_conv2 = layers.dropout(sensor_conv2, CONV_KEEP_PROB, is_training=train, 
+                sensor_conv2 = layers.dropout(sensor_conv2, config.CONV_KEEP_PROB, is_training=train,
                         noise_shape=[sensor_conv2_shape[0], 1, 1, 1, sensor_conv2_shape[4]], scope='sensor_dropout2')
 
-                sensor_conv3 = layers.convolution2d(sensor_conv2, CONV_NUM2, kernel_size=[1, 2, CONV_MERGE_LEN3],
+                sensor_conv3 = layers.convolution2d(sensor_conv2, config.CONV_NUM2, kernel_size=[1, 2, config.CONV_MERGE_LEN3],
                                                 stride=[1, 1, 1], padding='SAME', activation_fn=None, data_format='NDHWC', scope='sensor_conv3')
                 sensor_conv3 = batch_norm_layer(sensor_conv3, train, scope='sensor_BN3')
                 sensor_conv3 = tf.nn.relu(sensor_conv3)
@@ -193,14 +283,14 @@ def deepSense(inputs, train, reuse=False, name='deepSense'):
                         gru_cell2 = tf.contrib.rnn.DropoutWrapper(gru_cell2, output_keep_prob=0.5)
 
                 cell = tf.contrib.rnn.MultiRNNCell([gru_cell1, gru_cell2])
-                init_state = cell.zero_state(BATCH_SIZE, tf.float32)
+                init_state = cell.zero_state(config.BATCH_SIZE, tf.float32)
 
                 cell_output, final_stateTuple = tf.nn.dynamic_rnn(cell, sensor_conv_out, sequence_length=length, initial_state=init_state, time_major=False)
 
                 sum_cell_out = tf.reduce_sum(cell_output*mask, axis=1, keep_dims=False)
                 avg_cell_out = sum_cell_out/avgNum
 
-                logits = layers.fully_connected(avg_cell_out, OUT_DIM, activation_fn=None, scope='output')
+                logits = layers.fully_connected(avg_cell_out, 2, activation_fn=None, scope='output')
 
                 return logits
 
@@ -227,8 +317,8 @@ for csvFile in orgCsvFileList:
 
 global_step = tf.Variable(0, trainable=False)
 
-batch_feature, batch_label = input_pipeline(csvFileList, BATCH_SIZE)
-batch_eval_feature, batch_eval_label = input_pipeline(csvEvalFileList, BATCH_SIZE, shuffle_sample=False)
+batch_feature, batch_label = input_pipeline(csvFileList, config.BATCH_SIZE)
+batch_eval_feature, batch_eval_label = input_pipeline(csvEvalFileList, config.BATCH_SIZE, shuffle_sample=False)
 
 # train_status = tf.placeholder(tf.bool)
 # trainX = tf.cond(train_status, lambda: tf.identity(batch_feature), lambda: tf.identity(batch_eval_feature))
@@ -270,7 +360,7 @@ with tf.Session() as sess:
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord)
 
-        for iteration in xrange(TOTAL_ITER_NUM):
+        for iteration in xrange(config.TOTAL_ITER_NUM):
 
                 # _, lossV, _trainY, _predict = sess.run([discOptimizer, loss, trainY, predict], feed_dict = {
                 #         train_status: True
